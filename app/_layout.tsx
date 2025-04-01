@@ -1,39 +1,79 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { useRouter, Slot } from "expo-router";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { Provider as PaperProvider } from "react-native-paper";
+import { useEffect, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
+import BottomTabNavigator from "./components/BottomTabs";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+const AuthWrapper = () => {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    setIsMounted(true);
+  }, []);
 
-  if (!loaded) {
-    return null;
+  useEffect(() => {
+    if (isMounted && !loading) {
+      if (!user) {
+        router.replace("/welcome");
+        // router.replace("/home");
+      }
+    }
+  }, [user, loading, router, isMounted]);
+
+  if (loading || !isMounted) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
+  return <>{user ? <BottomTabNavigator /> : <Slot />}</>;
+};
+
+export default function Layout() {
+  console.log("Rendering Layout 💥💥💥💥💥💥💥💥💥💥💥💥💥");
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <PaperProvider>
+        <AuthWrapper />
+      </PaperProvider>
+    </AuthProvider>
   );
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// import React from "react";
+// import TestScreen from "./test";
+// import { Provider as PaperProvider } from "react-native-paper";
+
+// export default function Layout() {
+//   //   return <TestScreen />;
+//   // return (
+//   //   <AuthProvider>
+//   //     <NativeBaseProvider>
+//   //       <TestScreen />;
+//   //     </NativeBaseProvider>
+//   //   </AuthProvider>
+//   // );
+//   return (
+//     <PaperProvider>
+//       <TestScreen />
+//     </PaperProvider>
+//   );
+// }
+
+// import React from "react";
+// import HomeScreen from "./home";
+// import { AuthProvider, useAuth } from "../contexts/AuthContext";
+
+// export default function Layout() {
+//   return (
+//     <AuthProvider>
+//       <HomeScreen />;
+//     </AuthProvider>
+//   );
+// }
