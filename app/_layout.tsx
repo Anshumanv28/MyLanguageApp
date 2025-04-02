@@ -17,8 +17,9 @@ const AuthWrapper = () => {
   useEffect(() => {
     if (isMounted && !loading) {
       if (!user) {
-        router.replace("/welcome");
+        // router.replace("/welcome");
         // router.replace("/home");
+        router.replace("/games");
       }
     }
   }, [user, loading, router, isMounted]);
