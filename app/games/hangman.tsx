@@ -1,17 +1,45 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
-
-const words = ["REACT", "NATIVE", "JAVASCRIPT", "EXPO", "HANGMAN"];
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Image,
+  ActivityIndicator,
+} from "react-native";
+import { useFetchWords } from "../../hooks/useFetchWords";
+import { WordModel } from "../../models/WordModel"; // Import WordModel
 
 export default function HangmanGame() {
-  const [word, setWord] = useState(
-    words[Math.floor(Math.random() * words.length)]
-  );
-  const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
-  const [wrongGuesses, setWrongGuesses] = useState(0);
+  const { words, loading, error } = useFetchWords(); // Fetch words dynamically
+  const [word, setWord] = useState<string>(""); // The word to guess
+  const [guessedLetters, setGuessedLetters] = useState<string[]>([]); // Letters guessed by the user
+  const [wrongGuesses, setWrongGuesses] = useState(0); // Count of wrong guesses
 
   const maxWrongGuesses = 6;
 
+  const hangmanImages = [
+    require("../../assets/hangman0.png"), // Gallows only
+    require("../../assets/hangman1.png"), // Head
+    require("../../assets/hangman2.png"), // Head + Body
+    require("../../assets/hangman3.png"), // Head + Body + 1 Arm
+    require("../../assets/hangman4.png"), // Head + Body + 2 Arms
+    require("../../assets/hangman5.png"), // Head + Body + 2 Arms + 1 Leg
+    require("../../assets/hangman6.png"), // Full Hangman
+  ];
+
+  // Select a random word when the words array changes
+  useEffect(() => {
+    if (words.length > 0) {
+      const randomWord: string =
+        words[Math.floor(Math.random() * words.length)].enWord.toUpperCase();
+      setWord(randomWord);
+      console.log("Selected random word:", randomWord); // Debug log
+    }
+  }, [words]);
+
+  // Handle a guessed letter
   const handleGuess = (letter: string) => {
     if (guessedLetters.includes(letter)) {
       Alert.alert("Already guessed", `You already guessed "${letter}"`);
@@ -25,6 +53,7 @@ export default function HangmanGame() {
     }
   };
 
+  // Render the word with guessed letters and underscores
   const renderWord = () => {
     return word.split("").map((letter, index) =>
       guessedLetters.includes(letter) ? (
@@ -39,6 +68,7 @@ export default function HangmanGame() {
     );
   };
 
+  // Render the alphabet for guessing
   const renderAlphabet = () => {
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     return alphabet.map((letter) => (
@@ -52,6 +82,7 @@ export default function HangmanGame() {
     ));
   };
 
+  // Check if the game is over
   const checkGameOver = () => {
     if (wrongGuesses >= maxWrongGuesses) {
       Alert.alert("Game Over", `You lost! The word was "${word}".`, [
@@ -66,17 +97,46 @@ export default function HangmanGame() {
     }
   };
 
+  // Reset the game
   const resetGame = () => {
-    setWord(words[Math.floor(Math.random() * words.length)]);
+    if (words.length > 0) {
+      const randomWord: string =
+        words[Math.floor(Math.random() * words.length)].enWord.toUpperCase();
+      setWord(randomWord);
+      console.log("Reset game with new word:", randomWord); // Debug log
+    }
     setGuessedLetters([]);
     setWrongGuesses(0);
   };
 
-  checkGameOver();
+  // Check game over conditions whenever guessed letters or wrong guesses change
+  useEffect(() => {
+    if (word) {
+      checkGameOver();
+    }
+  }, [guessedLetters, wrongGuesses]);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text style={styles.loadingText}>Loading words...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Hangman Game</Text>
+      <Image source={hangmanImages[wrongGuesses]} style={styles.hangmanImage} />
       <Text style={styles.word}>{renderWord()}</Text>
       <Text style={styles.wrongGuesses}>
         Wrong Guesses: {wrongGuesses}/{maxWrongGuesses}
@@ -95,8 +155,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
+    marginBottom: 20,
+    color: "#333",
+  },
+  hangmanImage: {
+    width: 200,
+    height: 200,
+    resizeMode: "contain",
     marginBottom: 20,
   },
   word: {
@@ -104,10 +171,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 24,
     fontWeight: "bold",
+    letterSpacing: 5,
   },
   letter: {
-    fontSize: 24,
+    fontSize: 32,
     marginHorizontal: 5,
+    fontWeight: "bold",
+    color: "#333",
   },
   wrongGuesses: {
     fontSize: 18,
@@ -128,5 +198,16 @@ const styles = StyleSheet.create({
   letterButtonText: {
     color: "#fff",
     fontSize: 18,
+    fontWeight: "bold",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#555",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
   },
 });
